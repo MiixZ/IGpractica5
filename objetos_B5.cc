@@ -952,7 +952,7 @@ _coche::_coche(){
 //  SELECCIÓN
 
     int color=80;
-    piezas=5;
+    piezas=2;
     grosor_select=2;
     color_pick=_vertex3f(1.0,0.0,0.0); 
     color_select.resize(piezas);
@@ -1264,12 +1264,32 @@ void _sustentacioncoche::draw(_modo modo, float r, float g, float b, float groso
 }
 
 void _coche::draw(_modo modo, float r, float g, float b, float grosor){
+    float r_p,g_p,b_p;
+    r_p=color_pick.r;
+    g_p=color_pick.g;
+    b_p=color_pick.b;
 
     glPushMatrix();
-    
-    sustentacion.draw(modo, r, g, b, grosor, giro_puerta1, giro_puerta2, giro_puerta3);
+    if (activo[0]==1) sustentacion.draw(EDGES, r_p, g_p, b_p, grosor_select, giro_puerta1, giro_puerta2, giro_puerta3);
+    else sustentacion.draw(modo, r, g, b, grosor, giro_puerta1, giro_puerta2, giro_puerta3);
 
-    ruedas.draw(modo, r, g, b, grosor, giro_ruedas, giro_ruedas_delanteras, giro_antena, luz_encendida);
+    if (activo[1]==1) ruedas.draw(EDGES, r_p, g_p, b_p, grosor_select, giro_ruedas, giro_ruedas_delanteras, giro_antena, luz_encendida);
+    else ruedas.draw(modo, r, g, b, grosor, giro_ruedas, giro_ruedas_delanteras, giro_antena, luz_encendida);
+
+    glPopMatrix();
+}
+
+void _coche::seleccion(){
+
+    _vertex3i color;
+    float r_p,g_p,b_p;
+
+    glPushMatrix();
+    color = color_select[0];
+    sustentacion.draw(SELECT, color.r, color.g, color.b, 1, giro_puerta1, giro_puerta2, giro_puerta3);
+
+    color = color_select[1];
+    ruedas.draw(SELECT, color.r, color.g, color.b, 1, giro_ruedas, giro_ruedas_delanteras, giro_antena, luz_encendida);
 
     glPopMatrix();
 }

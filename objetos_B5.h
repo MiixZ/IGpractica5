@@ -312,6 +312,7 @@ public:
     _coche();
     
     void  draw(_modo modo, float r, float g, float b, float grosor);
+    void  seleccion();
     
     float giro_puerta1;
     float giro_puerta2;

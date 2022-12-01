@@ -45,6 +45,7 @@ _esferaDoble esfera2(0.4, 0.6, 25,25);
 _ModeloJerarquico modelo;
 
 // _objeto_ply *ply;
+int estadoRaton, xc, yc;
 
 
 //**************************************************************************
@@ -172,12 +173,21 @@ void luces(float alpha){
 //***************************************************************************
 
 void draw(void){
+    glDrawBuffer(GL_FRONT);
     clean_window();
     change_observer();
     luces(mov_camara);
     draw_axis();
     draw_objects();
-    glutSwapBuffers();
+    // glutSwapBuffers();
+
+    if(t_objeto == COCHE){
+        glDrawBuffer(GL_BACK);
+        clean_window();
+        change_observer();
+        coche.seleccion();
+    }
+    glFlush();  
 }
 
 //***************************************************************************
@@ -198,6 +208,66 @@ void change_window_size(int Ancho1,int Alto1){
     glutPostRedisplay();
 }
 
+void procesar_color(unsigned char color[3]){
+    int i;
+
+    for (i=0;i<coche.piezas;i++){
+        if(color[0]==coche.color_select[i].r && color[1]==coche.color_select[i].g && color[2]==coche.color_select[i].r){
+            if (coche.activo[i]==0) 
+                coche.activo[i]=1;
+            else 
+                coche.activo[i]=0;
+            glutPostRedisplay();
+        }
+    }                
+}
+
+//***************************************************************************
+
+void pick_color(int x, int y){
+    GLint viewport[4];
+    unsigned char pixel[3];
+
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    glReadBuffer(GL_BACK);
+    glReadPixels(x,viewport[3]-y,1,1,GL_RGB,GL_UNSIGNED_BYTE,(GLubyte *) &pixel[0]);
+    printf(" valor x %d, valor y %d, color %d, %d, %d \n",x,y,pixel[0],pixel[1],pixel[2]);
+
+    procesar_color(pixel);
+}
+
+void clickRaton( int boton, int estado, int x, int y )
+{
+    if(boton==GLUT_RIGHT_BUTTON) {
+        if(estado==GLUT_DOWN) {
+            estadoRaton=1;
+            xc=x;
+            yc=y;
+        }
+    } 
+    else estadoRaton=0;
+    
+    if(boton==GLUT_LEFT_BUTTON) {
+        if(estado==GLUT_DOWN) {
+            estadoRaton=2;
+            xc=x;
+            yc=y;
+            pick_color(xc, yc);
+        } 
+    }
+}
+
+/*************************************************************************/
+
+void RatonMovido( int x, int y ){ 
+    if(estadoRaton==1) {
+        Observer_angle_y=Observer_angle_y-(x-xc);
+        Observer_angle_x=Observer_angle_x+(y-yc);
+        xc=x;
+        yc=y;
+        glutPostRedisplay();
+    }
+}
 
 //***************************************************************************
 // Función llamada cuando se aprieta una tecla normal
@@ -454,6 +524,9 @@ int main(int argc, char *argv[] ){
     // Función de inicialización
     initialize();
 
+	// eventos ratón
+	glutMouseFunc(clickRaton);
+	glutMotionFunc(RatonMovido);
 
     glutIdleFunc(animacioncoche);
 
