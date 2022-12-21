@@ -46,14 +46,14 @@ _ModeloJerarquico modelo;
 
 // _objeto_ply *ply;
 int estadoRaton, xc, yc;
-
+float factor = 1.0;
+int Ancho = Window_width, Alto = Window_high, cambio = 0;
 
 //**************************************************************************
 //
 //***************************************************************************
 
 void clean_window(){
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 }
 
@@ -68,7 +68,7 @@ void change_projection(){
 
     // formato(x_minimo,x_maximo, y_minimo, y_maximo,plano_delantero, plano_traser)
     //  plano_delantero>0  plano_trasero>PlanoDelantero)
-    glFrustum(-Size_x,Size_x,-Size_y,Size_y,Front_plane,Back_plane);
+    glFrustum(-Size_x*factor,Size_x*factor,-Size_y*factor,Size_y*factor,Front_plane,Back_plane);
 }
 
 //**************************************************************************
@@ -76,8 +76,7 @@ void change_projection(){
 //***************************************************************************
 
 void change_observer(){
-
-    // posicion del observador
+    // posición del observador
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glTranslatef(0,0,-Observer_distance);
@@ -89,8 +88,7 @@ void change_observer(){
 // Función que dibuja los ejes utilizando la primitiva grafica de lineas
 //***************************************************************************
 
-void draw_axis(){
-	
+void draw_axis() {
     glDisable(GL_LIGHTING);
     glLineWidth(2);
     glBegin(GL_LINES);
@@ -132,6 +130,45 @@ void draw_objects(){
 	}
 }
 
+void vista_orto(){
+    // ALZADO
+    glViewport(Ancho/2, Alto/2, Ancho/2, Alto/2);       // Definir alto y ancho.
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(-5*factor, 5*factor, -5*factor, 5*factor, -100, 100);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    draw_axis();
+    draw_objects();
+
+    // PLANTA
+    glViewport(0, Alto/2, Ancho/2, Alto/2);       // Definir alto y ancho.
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(-5*factor, 5*factor, -5*factor, 5*factor, -100, 100);
+
+    glRotatef(90, 1, 0, 0);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    draw_axis();
+    draw_objects();
+
+    // PERFIL.
+    glViewport(0, 0, Ancho/2, Alto/2);       // Definir alto y ancho.
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(-5*factor, 5*factor, -5*factor, 5*factor, -100, 100);
+
+    glRotatef(90, 0, 1, 0);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    draw_axis();
+    draw_objects();
+}
+
 //**************************************************************************
 //  LUCES
 //***************************************************************************
@@ -151,7 +188,7 @@ void luces(float alpha){
         glLightfv(GL_LIGHT1, GL_SPECULAR, luz_especular);
         glLightfv(GL_LIGHT1, GL_POSITION, luz_posicion);
     }
-    else{
+    else {
         glLightfv(GL_LIGHT1, GL_AMBIENT, luz_ambiente2);
         glLightfv(GL_LIGHT1, GL_DIFFUSE, luz_difusa2);
         glLightfv(GL_LIGHT1, GL_SPECULAR, luz_especular2);
@@ -164,28 +201,43 @@ void luces(float alpha){
         glPopMatrix();
     }
 
-        glEnable(GL_LIGHT1);
-        glDisable(GL_LIGHT0);
+    glEnable(GL_LIGHT1);
+    glDisable(GL_LIGHT0);
 } 
 
 //**************************************************************************
 //
 //***************************************************************************
 
-void draw(void){
+void draw(void) {
     glDrawBuffer(GL_FRONT);
     clean_window();
-    change_observer();
+    //change_observer();
     luces(mov_camara);
-    draw_axis();
-    draw_objects();
+    //draw_axis();
+    //draw_objects();
     // glutSwapBuffers();
 
-    if(t_objeto == COCHE){
+    if (cambio == 0) {
+        glViewport(0, 0, Ancho, Alto);
+
+        change_projection();
+        change_observer();
+        draw_axis();
+        draw_objects();
+    }
+    else
+        vista_orto();
+
+    if (t_objeto == COCHE) {
         glDrawBuffer(GL_BACK);
         clean_window();
-        change_observer();
-        coche.seleccion();
+
+        if(cambio == 0) {
+            change_projection();
+            change_observer();
+            coche.seleccion();
+        }
     }
     glFlush();  
 }
@@ -198,8 +250,10 @@ void draw(void){
 // nuevo alto
 //***************************************************************************
 
-void change_window_size(int Ancho1,int Alto1){
+void change_window_size(int Ancho1,int Alto1) {
     float Aspect_ratio;
+    Ancho = Ancho1;
+    Alto = Alto1;
 
     Aspect_ratio=(float) Alto1/(float )Ancho1;
     Size_y=Size_x*Aspect_ratio;
@@ -208,10 +262,10 @@ void change_window_size(int Ancho1,int Alto1){
     glutPostRedisplay();
 }
 
-void procesar_color(unsigned char color[3]){
+void procesar_color(unsigned char color[3]) {
     int i;
 
-    for (i=0;i<coche.piezas;i++){
+    for (i=0;i<coche.piezas;i++) {
         if(color[0]==coche.color_select[i].r && color[1]==coche.color_select[i].g && color[2]==coche.color_select[i].r){
             if (coche.activo[i]==0) 
                 coche.activo[i]=1;
@@ -224,7 +278,7 @@ void procesar_color(unsigned char color[3]){
 
 //***************************************************************************
 
-void pick_color(int x, int y){
+void pick_color(int x, int y) {
     GLint viewport[4];
     unsigned char pixel[3];
 
@@ -236,8 +290,7 @@ void pick_color(int x, int y){
     procesar_color(pixel);
 }
 
-void clickRaton( int boton, int estado, int x, int y )
-{
+void clickRaton( int boton, int estado, int x, int y ) {
     if(boton==GLUT_RIGHT_BUTTON) {
         if(estado==GLUT_DOWN) {
             estadoRaton=1;
@@ -255,6 +308,15 @@ void clickRaton( int boton, int estado, int x, int y )
             pick_color(xc, yc);
         } 
     }
+
+    if(boton==3){
+        factor *= 1.1;
+        glutPostRedisplay();
+    }
+    if(boton==4){
+        factor *= 0.9;
+        glutPostRedisplay();
+    }
 }
 
 /*************************************************************************/
@@ -270,12 +332,12 @@ void RatonMovido( int x, int y ){
 }
 
 //***************************************************************************
-// Función llamada cuando se aprieta una tecla normal
+// Función llamada cuando se aprieta una tecla normal.
 //
-// El evento manda a la funcion:
-// Código de la tecla
-// Posición x del ratón
-// Posición y del ratón
+// El evento manda a la función:
+// Código de la tecla.
+// Posición x del ratón.
+// Posición y del ratón.
 //***************************************************************************
 
 void normal_key(unsigned char Tecla1,int x,int y){
@@ -324,6 +386,12 @@ void normal_key(unsigned char Tecla1,int x,int y){
                 coche.anima = true;
             break;
 
+        case 'Z':
+            if(cambio == 0)
+                cambio++;
+            else
+                cambio--;
+
         case ',': mov_camara+=5; break;
         case '.': mov_camara-=5; break;
         case '-': if(!luz_2) luz_2 = true; else luz_2 = false; break;
@@ -333,12 +401,12 @@ void normal_key(unsigned char Tecla1,int x,int y){
 }
 
 //***************************************************************************
-// Función l-olamada cuando se aprieta una tecla especial
+// Función l-olamada cuando se aprieta una tecla especial.
 //
 // El evento manda a la función:
-// Código de la tecla
-// Posición x del ratón
-// Posición y del ratón
+// Código de la tecla.
+// Posición x del ratón.
+// Posición y del ratón.
 
 //***************************************************************************
 
@@ -416,7 +484,7 @@ switch (Tecla1){
                 if (coche.giro_antena < -coche.GIRO_MAXIMO_ANTENA)
                     coche.giro_antena = -coche.GIRO_MAXIMO_ANTENA;break;
         case GLUT_KEY_F12:
-            if(coche.luz_encendida)
+            if (coche.luz_encendida)
                 coche.luz_encendida = false;
             else
                 coche.luz_encendida = true;       
@@ -426,17 +494,17 @@ switch (Tecla1){
 }
 
 //***************************************************************************
-// Función de incialización
+// Función de incialización.
 //***************************************************************************
 
-void initialize(void){
-    // Se inicalizan la ventana y los planos de corte
+void initialize(void) {
+    // Se inicalizan la ventana y los planos de corte.
     Size_x=0.5;
     Size_y=0.5;
     Front_plane=1;
     Back_plane=1000;
 
-    // Se incia la posicion del observador, en el eje z
+    // Se incia la posición del observador, en el eje z.
     Observer_distance=4*Front_plane;
     Observer_angle_x=0;
     Observer_angle_y=0;
@@ -445,7 +513,7 @@ void initialize(void){
     // blanco=(1,1,1,1) rojo=(1,0,0,1), ...
     glClearColor(1,1,1,1);
 
-    // Se habilita el z-bufer
+    // Se habilita el z-bufer.
     glEnable(GL_DEPTH_TEST);
     change_projection();
     glViewport(0,0,Window_width,Window_high);
@@ -455,7 +523,7 @@ void initialize(void){
 // Programa principal
 //
 // Se encarga de iniciar la ventana, asignar las funciones e comenzar el
-// bucle de eventos
+// bucle de eventos.
 //***************************************************************************
 
 int main(int argc, char *argv[] ){
@@ -488,55 +556,58 @@ int main(int argc, char *argv[] ){
 
     extrusion= new _extrusion(poligono, 0.25, 1.0, 0.25);
 
-    // Se llama a la inicialización de glut
+    // Se llama a la inicialización de glut.
     glutInit(&argc, argv);
 
-    // Se indica las caracteristicas que se desean para la visualización con OpenGL
+    // Se indica las características que se desean para la visualización con OpenGL.
     // Las posibilidades son:
-    // GLUT_SIMPLE -> memoria de imagen simple
-    // GLUT_DOUBLE -> memoria de imagen doble
-    // GLUT_INDEX -> memoria de imagen con color indizado
-    // GLUT_RGB -> memoria de imagen con componentes rojo, verde y azul para cada pixel
-    // GLUT_RGBA -> memoria de imagen con componentes rojo, verde, azul y alfa para cada pixel
-    // GLUT_DEPTH -> memoria de profundidad o z-bufer
+    // GLUT_SIMPLE -> memoria de imagen simple.
+    // GLUT_DOUBLE -> memoria de imagen doble.
+    // GLUT_INDEX -> memoria de imagen con color indizado.
+    // GLUT_RGB -> memoria de imagen con componentes rojo, verde y azul para cada pixel.
+    // GLUT_RGBA -> memoria de imagen con componentes rojo, verde, azul y alfa para cada pixel.
+    // GLUT_DEPTH -> memoria de profundidad o z-bufer.
     // GLUT_STENCIL -> memoria de estarcido_rotation Rotation;
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
 
-    // Posición de la esquina inferior izquierdad de la ventana
+    // Posición de la esquina inferior izquierdad de la ventana.
     glutInitWindowPosition(Window_x,Window_y);
 
-    // Tamaño de la ventana (ancho y alto)
+    // Tamaño de la ventana (ancho y alto).
     glutInitWindowSize(Window_width,Window_high);
 
     // Llamada para crear la ventana, indicando el titulo (no se visualiza hasta que se llama
-    // al bucle de eventos)
-    glutCreateWindow("PRÁCTICA - 5");
+    // al bucle de eventos).
+    glutCreateWindow("PRACTICA - 5");
 
-    // Asignación de la funcion llamada "dibujar" al evento de dibujo
+    // Asignación de la función llamada "dibujar" al evento de dibujo.
     glutDisplayFunc(draw);
-    // Asignación de la funcion llamada "change_window_size" al evento correspondiente
+    // Asignación de la función llamada "change_window_size" al evento correspondiente.
     glutReshapeFunc(change_window_size);
-    // Asignación de la funcion llamada "normal_key" al evento correspondiente
+    // Asignación de la función llamada "normal_key" al evento correspondiente.
     glutKeyboardFunc(normal_key);
-    // Asignación de la funcion llamada "tecla_Especial" al evento correspondiente
+    // Asignación de la función llamada "tecla_Especial" al evento correspondiente.
     glutSpecialFunc(special_key);
 
-    // Función de inicialización
+    // Función de inicialización.
     initialize();
 
-	// eventos ratón
+	// eventos ratón.
 	glutMouseFunc(clickRaton);
 	glutMotionFunc(RatonMovido);
 
     glutIdleFunc(animacioncoche);
 
-    // Creación del objeto ply
+    // Creación del objeto ply.
     ply.parametros(argv[1]);
     objetoPLY.parametros_PLY(argv[2], 8);
 
     //  ply = new _objeto_ply(argv[1]);
 
-    // Inicio del bucle de eventos
+    glutMouseFunc(clickRaton);
+    glutMotionFunc(RatonMovido);
+
+    // Inicio del bucle de eventos.
     glutMainLoop();
     return 0;
 }

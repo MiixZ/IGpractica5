@@ -15,8 +15,7 @@ typedef enum{POINTS,EDGES,SOLID,SOLID_COLORS,SOLID_FLAT, SOLID_SMOOTH, SELECT} _
 // clase punto
 //*************************************************************************
 
-class _puntos3D
-{
+class _puntos3D{
 public: 
     _puntos3D();
     void 	draw_puntos(float r, float g, float b, int grosor);
@@ -271,7 +270,6 @@ protected:
     _sustentacion sustentacion;
 };
 
-
 /***********************************COCHE************************************/
 
 class _ruedas: public _triangulos3D{
@@ -355,7 +353,6 @@ public:
 
     const float MAXIMO_CRECE = 3;
 
-private:
     _cubo nivel1;
     _cilindro nivel2_1, nivel2_2;
 };
